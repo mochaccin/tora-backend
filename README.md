@@ -1,5 +1,5 @@
 ## Estructura
-
+```
 self-regulation-app/
 ├── src/
 │   ├── auth/
@@ -37,6 +37,7 @@ self-regulation-app/
 ├── tsconfig.json
 ├── nest-cli.json
 └── .env
+```
 
 ## Endpoints
 
