@@ -2,6 +2,7 @@
 import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserRole } from '../shared/schemas/user.schema';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -10,7 +11,7 @@ export class UsersController {
 
   @Get('children')
   async getChildren(@Request() req) {
-    if (req.user.role !== 'parent') {
+    if (req.user.role !== UserRole.PARENT) {
       throw new Error('Only parents can access this endpoint');
     }
     return this.usersService.findChildrenByParent(req.user.userId);
@@ -18,7 +19,7 @@ export class UsersController {
 
   @Get('child/:id')
   async getChildProfile(@Param('id') id: string, @Request() req) {
-    if (req.user.role !== 'parent') {
+    if (req.user.role !== UserRole.PARENT) {
       throw new Error('Only parents can access this endpoint');
     }
     return this.usersService.getChildProfile(id, req.user.userId);

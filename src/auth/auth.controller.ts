@@ -1,11 +1,12 @@
 // src/auth/auth.controller.ts
-import { Controller, Post, Body, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 class RegisterParentDto {
   name: string;
   email: string;
   password: string;
+  phone: string;
 }
 
 class RegisterChildDto {
@@ -13,7 +14,8 @@ class RegisterChildDto {
   name: string;
   email: string;
   password: string;
-  birthDate: Date;
+  age: number;
+  grade: string;
 }
 
 class LoginDto {
@@ -26,27 +28,17 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register/parent')
-  async registerParent(@Body(ValidationPipe) registerDto: RegisterParentDto) {
-    return this.authService.registerParent(
-      registerDto.name,
-      registerDto.email,
-      registerDto.password,
-    );
+  async registerParent(@Body() registerDto: RegisterParentDto) {
+    return this.authService.registerParent(registerDto);
   }
 
   @Post('register/child')
-  async registerChild(@Body(ValidationPipe) registerDto: RegisterChildDto) {
-    return this.authService.registerChild(
-      registerDto.parentId,
-      registerDto.name,
-      registerDto.email,
-      registerDto.password,
-      registerDto.birthDate,
-    );
+  async registerChild(@Body() registerDto: RegisterChildDto) {
+    return this.authService.registerChild(registerDto);
   }
 
   @Post('login')
-  async login(@Body(ValidationPipe) loginDto: LoginDto) {
-    return this.authService.login(loginDto.email, loginDto.password);
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 }

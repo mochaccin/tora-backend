@@ -3,11 +3,14 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { User, UserSchema } from '../shared/schemas/user.schema';
+import { Parent, ParentSchema, Child, ChildSchema } from '../shared/schemas/user.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: Parent.name, schema: ParentSchema },
+      { name: Child.name, schema: ChildSchema },
+    ]),
   ],
   controllers: [UsersController],
   providers: [UsersService],
