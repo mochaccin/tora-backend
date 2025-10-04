@@ -18,7 +18,7 @@ export class CalendarController {
     @Query('childId') childId: string,
     @Request() req,
   ) {
-    const targetChildId = req.user.role === 'CHILD' ? req.user.userId : childId;
+    const targetChildId = req.user.role === 'CHILD' ? req.user.userId.toString() : childId;
     if (!targetChildId) {
       throw new Error('Child ID is required');
     }
@@ -33,7 +33,7 @@ export class CalendarController {
     @Query('childId') childId: string,
     @Request() req,
   ) {
-    const targetChildId = req.user.role === 'CHILD' ? req.user.userId : childId;
+    const targetChildId = req.user.role === 'CHILD' ? req.user.userId.toString() : childId;
     if (!targetChildId) {
       throw new Error('Child ID is required');
     }
@@ -62,10 +62,7 @@ export class CalendarController {
 
   @Put('tasks/:taskId/complete')
   async completeTask(@Param('taskId') taskId: string) {
-    return this.calendarService.updateTask(taskId, { 
-      status: TaskStatus.DONE,
-      endTime: new Date() 
-    });
+    return this.calendarService.completeTask(taskId);
   }
 
   @Delete('tasks/:taskId')

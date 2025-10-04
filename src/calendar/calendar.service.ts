@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Calendar, CalendarDocument } from '../shared/schemas/calendar.schema';
 import { CalendarBlock, CalendarBlockDocument, Period } from '../shared/schemas/calendar-block.schema';
-import { Task, TaskDocument } from '../shared/schemas/task.schema';
+import { Task, TaskDocument, TaskStatus } from '../shared/schemas/task.schema';
 import { EmotionRecord, EmotionRecordDocument } from '../shared/schemas/emotion-record.schema';
 
 @Injectable()
@@ -17,6 +17,14 @@ export class CalendarService {
   ) {}
 
   async getOrCreateCalendar(childId: string, date: Date) {
+    // Proper ObjectId conversion
+    let childObjectId: Types.ObjectId;
+    try {
+      childObjectId = new Types.ObjectId(childId);
+    } catch (error) {
+      throw new NotFoundException('Invalid child ID format');
+    }
+
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -24,7 +32,7 @@ export class CalendarService {
 
     let calendar = await this.calendarModel
       .findOne({
-        childId: new Types.ObjectId(childId),
+        childId: childObjectId,
         date: { $gte: startOfDay, $lte: endOfDay },
       })
       .populate({
@@ -39,13 +47,17 @@ export class CalendarService {
     if (!calendar) {
       // Create calendar with default blocks
       calendar = new this.calendarModel({
-        childId: new Types.ObjectId(childId),
+        childId: childObjectId,
         date: startOfDay,
         blocks: [],
       });
 
+      await calendar.save();
+
       // Create default blocks for the day
       const periods = [Period.MORNING, Period.AFTERNOON, Period.EVENING];
+      const blockIds = [];
+      
       for (const period of periods) {
         const block = new this.calendarBlockModel({
           calendarId: calendar._id,
@@ -53,9 +65,11 @@ export class CalendarService {
           tasks: [],
         });
         await block.save();
-        calendar.blocks.push(block._id as Types.ObjectId);
+        blockIds.push(block._id);
       }
 
+      // Update calendar with block references
+      calendar.blocks = blockIds;
       await calendar.save();
       
       // Reload with populated data
@@ -74,29 +88,43 @@ export class CalendarService {
     return calendar;
   }
 
-  async addTaskToBlock(blockId: string, taskData: Partial<Task>) {
-    const block = await this.calendarBlockModel.findById(blockId);
+  async addTaskToBlock(blockId: string, taskData: any) {
+    let blockObjectId: Types.ObjectId;
+    try {
+      blockObjectId = new Types.ObjectId(blockId);
+    } catch (error) {
+      throw new NotFoundException('Invalid block ID format');
+    }
+
+    const block = await this.calendarBlockModel.findById(blockObjectId);
     if (!block) {
       throw new NotFoundException('Calendar block not found');
     }
 
     const task = new this.taskModel({
       ...taskData,
-      blockId: new Types.ObjectId(blockId),
+      blockId: blockObjectId,
       createdAt: new Date(),
     });
 
     await task.save();
     
-    block.tasks.push(task._id as Types.ObjectId);
+    block.tasks.push(task._id);
     await block.save();
 
     return task;
   }
 
-  async updateTask(taskId: string, updateData: Partial<Task>) {
+  async updateTask(taskId: string, updateData: any) {
+    let taskObjectId: Types.ObjectId;
+    try {
+      taskObjectId = new Types.ObjectId(taskId);
+    } catch (error) {
+      throw new NotFoundException('Invalid task ID format');
+    }
+
     const task = await this.taskModel.findByIdAndUpdate(
-      taskId,
+      taskObjectId,
       updateData,
       { new: true },
     ).exec();
@@ -109,7 +137,14 @@ export class CalendarService {
   }
 
   async deleteTask(taskId: string) {
-    const task = await this.taskModel.findById(taskId);
+    let taskObjectId: Types.ObjectId;
+    try {
+      taskObjectId = new Types.ObjectId(taskId);
+    } catch (error) {
+      throw new NotFoundException('Invalid task ID format');
+    }
+
+    const task = await this.taskModel.findById(taskObjectId);
     if (!task) {
       throw new NotFoundException('Task not found');
     }
@@ -120,11 +155,18 @@ export class CalendarService {
       { $pull: { tasks: task._id } },
     );
 
-    await this.taskModel.findByIdAndDelete(taskId);
+    await this.taskModel.findByIdAndDelete(taskObjectId);
   }
 
   async recordEmotion(blockId: string, emotion: string) {
-    const block = await this.calendarBlockModel.findById(blockId);
+    let blockObjectId: Types.ObjectId;
+    try {
+      blockObjectId = new Types.ObjectId(blockId);
+    } catch (error) {
+      throw new NotFoundException('Invalid block ID format');
+    }
+
+    const block = await this.calendarBlockModel.findById(blockObjectId);
     if (!block) {
       throw new NotFoundException('Calendar block not found');
     }
@@ -135,23 +177,30 @@ export class CalendarService {
     }
 
     const emotionRecord = new this.emotionRecordModel({
-      blockId: new Types.ObjectId(blockId),
+      blockId: blockObjectId,
       emotion,
       createdAt: new Date(),
     });
 
     await emotionRecord.save();
 
-    block.emotion = emotionRecord._id as Types.ObjectId;
+    block.emotion = emotionRecord._id;
     await block.save();
 
     return emotionRecord;
   }
 
   async getCalendarByDateRange(childId: string, startDate: Date, endDate: Date) {
+    let childObjectId: Types.ObjectId;
+    try {
+      childObjectId = new Types.ObjectId(childId);
+    } catch (error) {
+      throw new NotFoundException('Invalid child ID format');
+    }
+
     const calendars = await this.calendarModel
       .find({
-        childId: new Types.ObjectId(childId),
+        childId: childObjectId,
         date: { $gte: startDate, $lte: endDate },
       })
       .populate({
@@ -165,5 +214,12 @@ export class CalendarService {
       .exec();
 
     return calendars;
+  }
+
+  async completeTask(taskId: string) {
+    return this.updateTask(taskId, { 
+      status: TaskStatus.DONE,
+      endTime: new Date() 
+    });
   }
 }
