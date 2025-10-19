@@ -6,6 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { RecommendationsModule } from './recommendations/recommendations.module';
+import { NonVerbalCommunicationModule } from './non-verbal-communication/non-verbal-communication.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -16,7 +19,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     UsersModule,
     CalendarModule,
-    DashboardModule, // Add this line
+    DashboardModule,
+    RecommendationsModule,
+    NonVerbalCommunicationModule,
+    NotificationsModule, // Add this
   ],
 })
 export class AppModule {}
