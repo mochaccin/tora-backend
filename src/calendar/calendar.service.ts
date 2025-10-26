@@ -6,6 +6,7 @@ import { Calendar, CalendarDocument } from '../shared/schemas/calendar.schema';
 import { CalendarBlock, CalendarBlockDocument, Period } from '../shared/schemas/calendar-block.schema';
 import { Task, TaskDocument, TaskStatus } from '../shared/schemas/task.schema';
 import { EmotionRecord, EmotionRecordDocument } from '../shared/schemas/emotion-record.schema';
+import { TaskNotificationsService } from '../notifications/task-notifications.service';
 
 @Injectable()
 export class CalendarService {
@@ -14,10 +15,10 @@ export class CalendarService {
     @InjectModel(CalendarBlock.name) private calendarBlockModel: Model<CalendarBlockDocument>,
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @InjectModel(EmotionRecord.name) private emotionRecordModel: Model<EmotionRecordDocument>,
+    private taskNotificationsService: TaskNotificationsService,
   ) {}
 
   async getOrCreateCalendar(childId: string, date: Date) {
-    // Proper ObjectId conversion
     let childObjectId: Types.ObjectId;
     try {
       childObjectId = new Types.ObjectId(childId);
@@ -45,7 +46,6 @@ export class CalendarService {
       .exec();
 
     if (!calendar) {
-      // Create calendar with default blocks
       calendar = new this.calendarModel({
         childId: childObjectId,
         date: startOfDay,
@@ -54,7 +54,6 @@ export class CalendarService {
 
       await calendar.save();
 
-      // Create default blocks for the day
       const periods = [Period.MORNING, Period.AFTERNOON, Period.EVENING];
       const blockIds = [];
       
@@ -68,11 +67,9 @@ export class CalendarService {
         blockIds.push(block._id);
       }
 
-      // Update calendar with block references
       calendar.blocks = blockIds;
       await calendar.save();
       
-      // Reload with populated data
       calendar = await this.calendarModel
         .findById(calendar._id)
         .populate({
@@ -112,6 +109,9 @@ export class CalendarService {
     block.tasks.push(task._id);
     await block.save();
 
+    // Notificar al niño sobre nueva tarea
+    await this.taskNotificationsService.notifyChildOnNewTask(task._id.toString());
+
     return task;
   }
 
@@ -133,6 +133,12 @@ export class CalendarService {
       throw new NotFoundException('Task not found');
     }
 
+    // Verificar si la tarea fue completada
+    if (updateData.status === TaskStatus.DONE && task.status === TaskStatus.DONE) {
+      // Notificar al padre sobre la tarea completada
+      await this.taskNotificationsService.notifyParentOnTaskCompletion(taskId);
+    }
+
     return task;
   }
 
@@ -149,7 +155,6 @@ export class CalendarService {
       throw new NotFoundException('Task not found');
     }
 
-    // Remove task from block
     await this.calendarBlockModel.updateOne(
       { _id: task.blockId },
       { $pull: { tasks: task._id } },
@@ -171,7 +176,6 @@ export class CalendarService {
       throw new NotFoundException('Calendar block not found');
     }
 
-    // Remove existing emotion if any
     if (block.emotion) {
       await this.emotionRecordModel.findByIdAndDelete(block.emotion);
     }
@@ -217,9 +221,14 @@ export class CalendarService {
   }
 
   async completeTask(taskId: string) {
-    return this.updateTask(taskId, { 
+    const task = await this.updateTask(taskId, { 
       status: TaskStatus.DONE,
       endTime: new Date() 
     });
+
+    // Notificar al padre sobre la tarea completada
+    await this.taskNotificationsService.notifyParentOnTaskCompletion(taskId);
+
+    return task;
   }
 }
