@@ -60,7 +60,7 @@ export class NotificationsService {
     ).exec();
   }
 
-  async sendToUser(userId: string, title: string, body: string, data?: Record<string, string>, imageUrl?: string) {
+  async sendToUser(userId: string, title: string, body: string, data?: Record<string, any>, imageUrl?: string) {
     const tokens = await this.getUserTokens(userId);
     
     if (tokens.length === 0) {
@@ -71,7 +71,7 @@ export class NotificationsService {
     return await this.sendNotification(tokens, title, body, data, imageUrl);
   }
 
-  async sendToChild(childId: string, title: string, body: string, data?: Record<string, string>, imageUrl?: string) {
+  async sendToChild(childId: string, title: string, body: string, data?: Record<string, any>, imageUrl?: string) {
     // Send to child
     const childTokens = await this.getUserTokens(childId);
     
@@ -93,7 +93,7 @@ export class NotificationsService {
     return await this.sendNotification(allTokens, title, body, data, imageUrl);
   }
 
-  async sendToParent(parentId: string, title: string, body: string, data?: Record<string, string>, imageUrl?: string) {
+  async sendToParent(parentId: string, title: string, body: string, data?: Record<string, any>, imageUrl?: string) {
     const tokens = await this.getUserTokens(parentId);
     
     if (tokens.length === 0) {
@@ -104,7 +104,7 @@ export class NotificationsService {
     return await this.sendNotification(tokens, title, body, data, imageUrl);
   }
 
-  async sendToAllUsers(title: string, body: string, data?: Record<string, string>, imageUrl?: string) {
+  async sendToAllUsers(title: string, body: string, data?: Record<string, any>, imageUrl?: string) {
     const tokens = await this.getAllActiveTokens();
     
     if (tokens.length === 0) {
@@ -190,7 +190,7 @@ export class NotificationsService {
     tokens: string[], 
     title: string, 
     body: string, 
-    data?: Record<string, string>, 
+    data?: Record<string, any>, 
     imageUrl?: string
   ) {
     const message: admin.messaging.MulticastMessage = {

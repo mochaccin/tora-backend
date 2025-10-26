@@ -9,6 +9,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { NonVerbalCommunicationModule } from './non-verbal-communication/non-verbal-communication.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SelfRegulationModule } from './self-regulation/self-regulation.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     DashboardModule,
     RecommendationsModule,
     NonVerbalCommunicationModule,
-    NotificationsModule, // Add this
+    NotificationsModule,
+    SelfRegulationModule, // Agregar esta línea
   ],
 })
 export class AppModule {}
