@@ -10,6 +10,7 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
 import { NonVerbalCommunicationModule } from './non-verbal-communication/non-verbal-communication.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SelfRegulationModule } from './self-regulation/self-regulation.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { SelfRegulationModule } from './self-regulation/self-regulation.module';
     RecommendationsModule,
     NonVerbalCommunicationModule,
     NotificationsModule,
-    SelfRegulationModule, // Agregar esta línea
+    SelfRegulationModule,
+    WhatsAppModule,
   ],
 })
 export class AppModule {}

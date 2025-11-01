@@ -8,6 +8,7 @@ import { EmergencyContact, EmergencyContactSchema } from '../shared/schemas/emer
 import { Child, ChildSchema } from '../shared/schemas/user.schema';
 import { Parent, ParentSchema } from '../shared/schemas/user.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { WhatsAppModule } from '../whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: Parent.name, schema: ParentSchema },
     ]),
     NotificationsModule,
+    WhatsAppModule,
   ],
   controllers: [SelfRegulationController],
   providers: [SelfRegulationService],
