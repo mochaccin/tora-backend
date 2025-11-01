@@ -230,15 +230,24 @@ export class DashboardService {
     const emotionMap = new Map<string, { morning?: EmotionType; afternoon?: EmotionType; evening?: EmotionType }>();
 
     calendars.forEach(calendar => {
+      // Verificar que calendar y calendar.date existan
+      if (!calendar || !calendar.date) return;
+      
       const dateStr = calendar.date.toISOString().split('T')[0];
       const dayEmotions: { morning?: EmotionType; afternoon?: EmotionType; evening?: EmotionType } = {};
 
-      calendar.blocks.forEach((block: any) => {
-        if (block.emotion) {
-          const period = block.period.toLowerCase() as 'morning' | 'afternoon' | 'evening';
-          dayEmotions[period] = block.emotion.emotion;
-        }
-      });
+      // Verificar que calendar.blocks exista y sea un array
+      if (calendar.blocks && Array.isArray(calendar.blocks)) {
+        calendar.blocks.forEach((block: any) => {
+          // Verificar que block y block.emotion existan
+          if (block && block.emotion) {
+            const period = block.period?.toLowerCase() as 'morning' | 'afternoon' | 'evening';
+            if (period) {
+              dayEmotions[period] = block.emotion.emotion;
+            }
+          }
+        });
+      }
 
       emotionMap.set(dateStr, dayEmotions);
     });
@@ -267,10 +276,17 @@ export class DashboardService {
     const emotionByDate = new Map<string, EmotionType>();
     
     emotions.forEach(emotion => {
-      if (emotion.blockId) {
-        const block = emotion.blockId as any;
-        if (block.calendarId) {
-          const calendar = block.calendarId as any;
+      // Verificar que emotion y emotion.blockId existan
+      if (!emotion || !emotion.blockId) return;
+      
+      const block = emotion.blockId as any;
+      
+      // Verificar que block.calendarId exista
+      if (block && block.calendarId) {
+        const calendar = block.calendarId as any;
+        
+        // Verificar que calendar.date exista
+        if (calendar && calendar.date) {
           const dateStr = calendar.date.toISOString().split('T')[0];
           
           // Use the first emotion of the day as representative
@@ -288,8 +304,13 @@ export class DashboardService {
   }
 
   private calculateTaskStatistics(tasks: TaskDocument[]): { total: number; completed: number; percentage: number } {
+    // Verificar que tasks sea un array
+    if (!Array.isArray(tasks)) {
+      return { total: 0, completed: 0, percentage: 0 };
+    }
+
     const total = tasks.length;
-    const completed = tasks.filter(task => task.status === TaskStatus.DONE).length;
+    const completed = tasks.filter(task => task && task.status === TaskStatus.DONE).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return { total, completed, percentage };
@@ -306,56 +327,66 @@ export class DashboardService {
     const oneWeekAgo = new Date(today);
     oneWeekAgo.setDate(today.getDate() - 7);
 
-    // Check for low task completion rate in last week
-    const recentTasks = tasks.filter(task => {
-      const taskDate = task.createdAt || new Date();
-      return taskDate >= oneWeekAgo;
-    });
+    try {
+      // Check for low task completion rate in last week
+      const recentTasks = Array.isArray(tasks) ? tasks.filter(task => {
+        if (!task) return false;
+        
+        const taskDate = task.createdAt || new Date();
+        return taskDate >= oneWeekAgo;
+      }) : [];
 
-    if (recentTasks.length > 0) {
-      const completionRate = recentTasks.filter(t => t.status === TaskStatus.DONE).length / recentTasks.length;
-      if (completionRate < 0.5) {
+      if (recentTasks.length > 0) {
+        const completionRate = recentTasks.filter(t => t && t.status === TaskStatus.DONE).length / recentTasks.length;
+        if (completionRate < 0.5) {
+          alerts.push({
+            id: `alert-${Date.now()}-1`,
+            childId,
+            type: 'LOW_COMPLETION',
+            description: `Baja tasa de completación de tareas (${Math.round(completionRate * 100)}%) en la última semana`,
+            timestamp: new Date(),
+          });
+        }
+      }
+
+      // Check for negative emotions in last 3 days
+      const recentEmotions = Array.isArray(emotions) ? emotions.filter(emotion => {
+        if (!emotion) return false;
+        
+        const emotionDate = emotion.createdAt || new Date();
+        return emotionDate >= oneWeekAgo;
+      }) : [];
+
+      const negativeEmotions = recentEmotions.filter(e => 
+        e && [EmotionType.SAD, EmotionType.ANGRY].includes(e.emotion)
+      );
+
+      if (negativeEmotions.length >= 3) {
         alerts.push({
-          id: `alert-${Date.now()}-1`,
+          id: `alert-${Date.now()}-2`,
           childId,
-          type: 'LOW_COMPLETION',
-          description: `Baja tasa de completación de tareas (${Math.round(completionRate * 100)}%) en la última semana`,
+          type: 'NEGATIVE_EMOTION',
+          description: `Múltiples emociones negativas registradas (${negativeEmotions.length} en la última semana)`,
           timestamp: new Date(),
         });
       }
+
+      // Simulate panic button alerts (based on negative emotions)
+      if (negativeEmotions.length >= 2) {
+        const firstEmotion = negativeEmotions[0];
+        alerts.push({
+          id: `alert-${Date.now()}-3`,
+          childId,
+          type: 'PANIC_BUTTON',
+          description: 'Posible episodio de desregulación emocional detectado',
+          timestamp: new Date(firstEmotion?.createdAt || new Date()),
+        });
+      }
+    } catch (error) {
+      console.error('Error generating alerts:', error);
+      // Continue without alerts if there's an error
     }
 
-    // Check for negative emotions in last 3 days
-    const recentEmotions = emotions.filter(emotion => {
-      const emotionDate = emotion.createdAt || new Date();
-      return emotionDate >= oneWeekAgo;
-    });
-
-    const negativeEmotions = recentEmotions.filter(e => 
-      [EmotionType.SAD, EmotionType.ANGRY].includes(e.emotion)
-    );
-
-    if (negativeEmotions.length >= 3) {
-      alerts.push({
-        id: `alert-${Date.now()}-2`,
-        childId,
-        type: 'NEGATIVE_EMOTION',
-        description: `Múltiples emociones negativas registradas (${negativeEmotions.length} en la última semana)`,
-        timestamp: new Date(),
-      });
-    }
-
-    // Simulate panic button alerts (based on negative emotions)
-    if (negativeEmotions.length >= 2) {
-      alerts.push({
-        id: `alert-${Date.now()}-3`,
-        childId,
-        type: 'PANIC_BUTTON',
-        description: 'Posible episodio de desregulación emocional detectado',
-        timestamp: new Date(negativeEmotions[0].createdAt || new Date()),
-      });
-    }
-
-    return alerts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 5); // Return top 5 alerts
+    return alerts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 5);
   }
 }
