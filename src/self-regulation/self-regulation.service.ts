@@ -40,6 +40,8 @@ export class SelfRegulationService {
     notes?: string;
   }) {
     try {
+      this.logger.log(`🔘 Activating self-regulation button for child ${childId} with level ${data.level}`);
+
       // Crear registro del botón presionado
       const regulationRecord = new this.selfRegulationModel({
         childId: new Types.ObjectId(childId),
@@ -52,15 +54,16 @@ export class SelfRegulationService {
       });
 
       await regulationRecord.save();
+      this.logger.log(`✅ Self-regulation record created with ID: ${regulationRecord._id}`);
 
       // Enviar alertas a padres y contactos
       await this.sendAlerts(childId, regulationRecord);
 
-      this.logger.log(`Self-regulation button activated by child ${childId} with level ${data.level}`);
+      this.logger.log(`✅ Self-regulation button activated by child ${childId} with level ${data.level}`);
 
       return regulationRecord;
     } catch (error) {
-      this.logger.error(`Error activating self-regulation button: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error activating self-regulation button: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -70,6 +73,8 @@ export class SelfRegulationService {
    */
   private async sendAlerts(childId: string, regulationRecord: SelfRegulationButtonDocument) {
     try {
+      this.logger.log(`🚨 Starting alert process for child ${childId}`);
+
       // Obtener información del niño
       const child = await this.childModel
         .findById(childId)
@@ -77,12 +82,14 @@ export class SelfRegulationService {
         .exec();
 
       if (!child || !child.parentId) {
-        this.logger.warn(`Child or parent not found for child ${childId}`);
+        this.logger.warn(`❌ Child or parent not found for child ${childId}`);
         return;
       }
 
       const parentId = (child.parentId as any)._id?.toString() || child.parentId.toString();
       const childName = child.name;
+
+      this.logger.log(`👨‍👦 Child ${childName} belongs to parent ${parentId}`);
 
       // Obtener contactos de emergencia
       const emergencyContacts = await this.emergencyContactModel
@@ -94,38 +101,54 @@ export class SelfRegulationService {
         .sort({ priority: 1 })
         .exec();
 
+      this.logger.log(`📞 Found ${emergencyContacts.length} emergency contacts`);
+
       // Preparar mensaje según el nivel
       const { title, body } = this.getAlertMessage(regulationRecord.level, childName);
 
-      // Datos para la notificación - convertir boolean a string
-      const notificationData = {
+      // Datos para la notificación - convertir todos los valores a string
+      const notificationData: Record<string, string> = {
         type: 'SELF_REGULATION_ALERT',
         childId: childId,
         childName: childName,
         regulationId: regulationRecord._id.toString(),
         level: regulationRecord.level,
-        assistanceRequested: regulationRecord.assistanceRequested.toString(), // Convertir a string
+        assistanceRequested: regulationRecord.assistanceRequested.toString(),
         timestamp: new Date().toISOString(),
       };
 
+      // Agregar campos opcionales solo si existen
+      if (regulationRecord.emotion) {
+        notificationData.emotion = regulationRecord.emotion;
+      }
+      if (regulationRecord.trigger) {
+        notificationData.trigger = regulationRecord.trigger;
+      }
+      if (regulationRecord.strategyUsed) {
+        notificationData.strategyUsed = regulationRecord.strategyUsed;
+      }
+
+      this.logger.log(`📤 Sending notification to parent: ${title} - ${body}`);
+      this.logger.log(`📊 Notification data: ${JSON.stringify(notificationData)}`);
+
       // Enviar notificación al padre
-      await this.notificationsService.sendToParent(
+      const parentResult = await this.notificationsService.sendToParent(
         parentId,
         title,
         body,
         notificationData
       );
 
-      this.logger.log(`Alert sent to parent ${parentId} for self-regulation event`);
+      this.logger.log(`✅ Parent notification result: ${JSON.stringify(parentResult)}`);
 
       // Enviar notificaciones a contactos de emergencia
       for (const contact of emergencyContacts) {
         await this.sendContactAlert(contact, title, body, notificationData);
       }
 
-      this.logger.log(`Alerts sent to ${emergencyContacts.length} emergency contacts`);
+      this.logger.log(`✅ Alerts sent to ${emergencyContacts.length} emergency contacts`);
     } catch (error) {
-      this.logger.error(`Error sending alerts: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error sending alerts: ${error.message}`, error.stack);
     }
   }
 
@@ -136,18 +159,18 @@ export class SelfRegulationService {
     contact: EmergencyContact, 
     title: string, 
     body: string, 
-    data: Record<string, string> // Asegurar que es Record<string, string>
+    data: Record<string, string>
   ) {
     try {
       // En una implementación real, aquí enviarías SMS/email/llamada
       // Por ahora solo logramos la acción
-      this.logger.log(`ALERT for ${contact.name} (${contact.phone}): ${title} - ${body}`);
+      this.logger.log(`📞 ALERT for ${contact.name} (${contact.phone}): ${title} - ${body}`);
 
       // Podrías integrar con un servicio de SMS como Twilio aquí
       // await this.smsService.sendSMS(contact.phone, `${title}: ${body}`);
 
     } catch (error) {
-      this.logger.error(`Error sending alert to contact ${contact.name}: ${error.message}`);
+      this.logger.error(`❌ Error sending alert to contact ${contact.name}: ${error.message}`);
     }
   }
 
@@ -210,11 +233,11 @@ export class SelfRegulationService {
         throw new Error('Self-regulation record not found');
       }
 
-      this.logger.log(`Self-regulation event ${regulationId} marked as resolved by ${resolvedBy}`);
+      this.logger.log(`✅ Self-regulation event ${regulationId} marked as resolved by ${resolvedBy}`);
 
       return regulationRecord;
     } catch (error) {
-      this.logger.error(`Error resolving self-regulation event: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error resolving self-regulation event: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -235,9 +258,10 @@ export class SelfRegulationService {
         .sort({ createdAt: -1 })
         .exec();
 
+      this.logger.log(`📊 Retrieved ${history.length} self-regulation records for child ${childId}`);
       return history;
     } catch (error) {
-      this.logger.error(`Error getting button history: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error getting button history: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -263,24 +287,28 @@ export class SelfRegulationService {
       });
 
       await contact.save();
+      this.logger.log(`✅ Added emergency contact: ${contactData.name} for parent ${parentId}`);
       return contact;
     } catch (error) {
-      this.logger.error(`Error adding emergency contact: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error adding emergency contact: ${error.message}`, error.stack);
       throw error;
     }
   }
 
   async getEmergencyContacts(parentId: string) {
     try {
-      return await this.emergencyContactModel
+      const contacts = await this.emergencyContactModel
         .find({ 
           parentId: new Types.ObjectId(parentId),
           active: true 
         })
         .sort({ priority: 1, name: 1 })
         .exec();
+
+      this.logger.log(`📞 Retrieved ${contacts.length} emergency contacts for parent ${parentId}`);
+      return contacts;
     } catch (error) {
-      this.logger.error(`Error getting emergency contacts: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error getting emergency contacts: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -297,9 +325,10 @@ export class SelfRegulationService {
         throw new Error('Emergency contact not found');
       }
 
+      this.logger.log(`✅ Updated emergency contact: ${contactId}`);
       return contact;
     } catch (error) {
-      this.logger.error(`Error updating emergency contact: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error updating emergency contact: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -316,9 +345,10 @@ export class SelfRegulationService {
         throw new Error('Emergency contact not found');
       }
 
+      this.logger.log(`✅ Deleted emergency contact: ${contactId}`);
       return contact;
     } catch (error) {
-      this.logger.error(`Error deleting emergency contact: ${error.message}`, error.stack);
+      this.logger.error(`❌ Error deleting emergency contact: ${error.message}`, error.stack);
       throw error;
     }
   }

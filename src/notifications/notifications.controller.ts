@@ -131,32 +131,12 @@ export class NotificationsController {
       throw new NotFoundException('Task not found');
     }
 
-    // En una implementación real, verificarías que el calendar.childId esté en req.user.children
-    // Por ahora asumimos que el padre tiene acceso
-
     await this.taskNotificationsService.notifyTaskReminder(taskId);
     
     return { 
       success: true, 
       message: 'Task reminder sent successfully' 
     };
-  }
-
-  @Post('send-task-reminder/:childId')
-  async sendTaskReminderToChild(
-    @Param('childId') childId: string,
-    @Body() body: { taskTitle: string; dueTime?: Date },
-    @Request() req,
-  ) {
-    if (req.user.role !== UserRole.PARENT) {
-      throw new Error('Only parents can send task reminders');
-    }
-
-    return this.notificationsService.sendTaskReminder(
-      childId,
-      body.taskTitle,
-      body.dueTime
-    );
   }
 
   @Post('send-emotion-checkin/:childId')
@@ -208,5 +188,31 @@ export class NotificationsController {
       body.alertType,
       body.message
     );
+  }
+
+  // Endpoint de test para debuggear notificaciones
+  @Post('test-notification')
+  async testNotification(
+    @Body() body: { userId: string; title?: string; body?: string },
+    @Request() req,
+  ) {
+    console.log('🧪 Testing notification endpoint');
+    
+    // Permitir solo en desarrollo o para admins
+    if (process.env.NODE_ENV !== 'development' && req.user.role !== UserRole.PARENT) {
+      throw new Error('Not authorized');
+    }
+
+    const result = await this.notificationsService.sendToUser(
+      body.userId,
+      body.title || 'Test Notification',
+      body.body || 'This is a test notification from the backend',
+      { type: 'TEST', timestamp: new Date().toISOString() }
+    );
+
+    return {
+      message: 'Test notification sent',
+      result
+    };
   }
 }
