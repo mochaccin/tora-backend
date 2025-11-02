@@ -8,6 +8,7 @@ import { Calendar, CalendarSchema } from '../shared/schemas/calendar.schema';
 import { CalendarBlock, CalendarBlockSchema } from '../shared/schemas/calendar-block.schema';
 import { Task, TaskSchema } from '../shared/schemas/task.schema';
 import { EmotionRecord, EmotionRecordSchema } from '../shared/schemas/emotion-record.schema';
+import { SelfRegulationButton, SelfRegulationButtonSchema } from '../shared/schemas/self-regulation-button.schema';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { EmotionRecord, EmotionRecordSchema } from '../shared/schemas/emotion-re
       { name: CalendarBlock.name, schema: CalendarBlockSchema },
       { name: Task.name, schema: TaskSchema },
       { name: EmotionRecord.name, schema: EmotionRecordSchema },
+      { name: SelfRegulationButton.name, schema: SelfRegulationButtonSchema },
     ]),
   ],
   controllers: [DashboardController],

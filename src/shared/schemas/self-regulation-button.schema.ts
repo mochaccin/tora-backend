@@ -2,7 +2,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type SelfRegulationButtonDocument = SelfRegulationButton & Document;
+export type SelfRegulationButtonDocument = SelfRegulationButton & Document & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export enum RegulationLevel {
   LOW = 'LOW',        // Leve - algo de ansiedad
@@ -11,7 +14,7 @@ export enum RegulationLevel {
   CRITICAL = 'CRITICAL' // Crítico - necesita intervención inmediata
 }
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true }) // Esto automáticamente agrega createdAt y updatedAt
 export class SelfRegulationButton {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
   _id: Types.ObjectId;
