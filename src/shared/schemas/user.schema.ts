@@ -60,6 +60,9 @@ export class Child extends User {
 
   @Prop({ type: Types.ObjectId, ref: 'Parent', required: true })
   parentId: Types.ObjectId;
+
+  @Prop({ type: Number, default: 0 })
+  coins: number; //  Contador de monedas
 }
 
 export const ChildSchema = SchemaFactory.createForClass(Child);
