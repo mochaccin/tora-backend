@@ -6,9 +6,11 @@ import {
   UseGuards, 
   Request,
   Param,
-  Delete 
+  Delete,
+  NotFoundException 
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { TaskNotificationsService } from './task-notifications.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { 
   RegisterDeviceTokenDto, 
@@ -18,11 +20,18 @@ import {
   SendToParentDto 
 } from '../shared/dtos/notification.dto';
 import { UserRole } from '../shared/schemas/user.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Task, TaskDocument } from '../shared/schemas/task.schema';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
-  constructor(private notificationsService: NotificationsService) {}
+  constructor(
+    private notificationsService: NotificationsService,
+    private taskNotificationsService: TaskNotificationsService,
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+  ) {}
 
   @Post('register-token')
   async registerToken(
@@ -49,7 +58,6 @@ export class NotificationsController {
     @Body() sendDto: SendToUserDto,
     @Request() req,
   ) {
-    // Only admins or the user themselves can send notifications
     if (req.user.role !== UserRole.PARENT && req.user.userId.toString() !== sendDto.userId) {
       throw new Error('Not authorized to send notifications to this user');
     }
@@ -68,7 +76,6 @@ export class NotificationsController {
     @Body() sendDto: SendToChildDto,
     @Request() req,
   ) {
-    // Only parents or admins can send to children
     if (req.user.role !== UserRole.PARENT) {
       throw new Error('Only parents can send notifications to children');
     }
@@ -87,7 +94,6 @@ export class NotificationsController {
     @Body() sendDto: SendToParentDto,
     @Request() req,
   ) {
-    // Only admins or the parent themselves can send notifications
     if (req.user.role !== UserRole.PARENT && req.user.userId.toString() !== sendDto.parentId) {
       throw new Error('Not authorized to send notifications to this parent');
     }
@@ -101,21 +107,36 @@ export class NotificationsController {
     );
   }
 
-  @Post('send-task-reminder/:childId')
+  @Post('send-task-reminder/:taskId')
   async sendTaskReminder(
-    @Param('childId') childId: string,
-    @Body() body: { taskTitle: string; dueTime?: Date },
+    @Param('taskId') taskId: string,
     @Request() req,
   ) {
-    if (req.user.role !== UserRole.PARENT) {
+    if (req.user.role !== 'PARENT') {
       throw new Error('Only parents can send task reminders');
     }
 
-    return this.notificationsService.sendTaskReminder(
-      childId,
-      body.taskTitle,
-      body.dueTime
-    );
+    // Verificar que la tarea pertenezca a un hijo del padre
+    const task = await this.taskModel
+      .findById(taskId)
+      .populate({
+        path: 'blockId',
+        populate: {
+          path: 'calendarId'
+        }
+      })
+      .exec();
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    await this.taskNotificationsService.notifyTaskReminder(taskId);
+    
+    return { 
+      success: true, 
+      message: 'Task reminder sent successfully' 
+    };
   }
 
   @Post('send-emotion-checkin/:childId')
@@ -140,7 +161,6 @@ export class NotificationsController {
     @Body() body: { childName: string; progress: string },
     @Request() req,
   ) {
-    // System-generated or admin only
     if (req.user.role !== UserRole.PARENT) {
       throw new Error('Not authorized to send progress updates');
     }
@@ -158,7 +178,6 @@ export class NotificationsController {
     @Body() body: { childName: string; alertType: string; message: string },
     @Request() req,
   ) {
-    // System-generated or admin only
     if (req.user.role !== UserRole.PARENT) {
       throw new Error('Not authorized to send alerts');
     }
@@ -169,5 +188,31 @@ export class NotificationsController {
       body.alertType,
       body.message
     );
+  }
+
+  // Endpoint de test para debuggear notificaciones
+  @Post('test-notification')
+  async testNotification(
+    @Body() body: { userId: string; title?: string; body?: string },
+    @Request() req,
+  ) {
+    console.log('🧪 Testing notification endpoint');
+    
+    // Permitir solo en desarrollo o para admins
+    if (process.env.NODE_ENV !== 'development' && req.user.role !== UserRole.PARENT) {
+      throw new Error('Not authorized');
+    }
+
+    const result = await this.notificationsService.sendToUser(
+      body.userId,
+      body.title || 'Test Notification',
+      body.body || 'This is a test notification from the backend',
+      { type: 'TEST', timestamp: new Date().toISOString() }
+    );
+
+    return {
+      message: 'Test notification sent',
+      result
+    };
   }
 }

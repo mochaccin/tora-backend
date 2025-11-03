@@ -7,6 +7,7 @@ import { Calendar, CalendarSchema } from '../shared/schemas/calendar.schema';
 import { CalendarBlock, CalendarBlockSchema } from '../shared/schemas/calendar-block.schema';
 import { Task, TaskSchema } from '../shared/schemas/task.schema';
 import { EmotionRecord, EmotionRecordSchema } from '../shared/schemas/emotion-record.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { EmotionRecord, EmotionRecordSchema } from '../shared/schemas/emotion-re
       { name: Task.name, schema: TaskSchema },
       { name: EmotionRecord.name, schema: EmotionRecordSchema },
     ]),
+    NotificationsModule,
   ],
   controllers: [CalendarController],
   providers: [CalendarService],
