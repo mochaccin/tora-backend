@@ -12,7 +12,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PictogramsModule } from './pictograms/pictograms.module';
 import { SelfRegulationModule } from './self-regulation/self-regulation.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
-
+import { CoinsModule } from './coins/coins.module';
 
 @Module({
   imports: [
@@ -30,6 +30,7 @@ import { WhatsAppModule } from './whatsapp/whatsapp.module';
     PictogramsModule, 
     SelfRegulationModule,
     WhatsAppModule,
+    CoinsModule,
   ],
 })
 export class AppModule {}
