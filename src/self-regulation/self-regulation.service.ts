@@ -1,22 +1,38 @@
 // src/self-regulation/self-regulation.service.ts
-import { Injectable, Logger } from "@nestjs/common"
-import { type Model, Types } from "mongoose"
-import type { NotificationsService } from "../notifications/notifications.service"
-import type { WhatsAppService } from "../whatsapp/whatsapp.service"
-import { type SelfRegulationButtonDocument, RegulationLevel } from "../shared/schemas/self-regulation-button.schema"
-import type { EmergencyContact, EmergencyContactDocument } from "../shared/schemas/emergency-contact.schema"
-import type { ChildDocument } from "../shared/schemas/user.schema"
-import type { ParentDocument } from "../shared/schemas/user.schema"
+import { Injectable, Logger, Inject } from "@nestjs/common"
+import { InjectModel } from "@nestjs/mongoose"
+import { Model, Types } from "mongoose"
+import { NotificationsService } from "../notifications/notifications.service"
+import { WhatsAppService } from "../whatsapp/whatsapp.service"
+import { 
+  SelfRegulationButton, 
+  SelfRegulationButtonDocument, 
+  RegulationLevel 
+} from "../shared/schemas/self-regulation-button.schema"
+import { 
+  EmergencyContact, 
+  EmergencyContactDocument 
+} from "../shared/schemas/emergency-contact.schema"
+import { Child, ChildDocument } from "../shared/schemas/user.schema"
+import { Parent, ParentDocument } from "../shared/schemas/user.schema"
 
 @Injectable()
 export class SelfRegulationService {
   private readonly logger = new Logger(SelfRegulationService.name)
 
   constructor(
+    @InjectModel(SelfRegulationButton.name) 
     private selfRegulationModel: Model<SelfRegulationButtonDocument>,
+    
+    @InjectModel(EmergencyContact.name) 
     private emergencyContactModel: Model<EmergencyContactDocument>,
+    
+    @InjectModel(Child.name) 
     private childModel: Model<ChildDocument>,
+    
+    @InjectModel(Parent.name) 
     private parentModel: Model<ParentDocument>,
+    
     private notificationsService: NotificationsService,
     private whatsappService: WhatsAppService,
   ) {}
