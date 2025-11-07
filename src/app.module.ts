@@ -9,10 +9,12 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { NonVerbalCommunicationModule } from './non-verbal-communication/non-verbal-communication.module';
 import { NotificationsModule } from './notifications/notifications.module';
+
 import { PictogramsModule } from './pictograms/pictograms.module';
+import { CoinsModule } from './coins/coins.module';
 import { SelfRegulationModule } from './self-regulation/self-regulation.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
-import { CoinsModule } from './coins/coins.module';
+
 
 @Module({
   imports: [
