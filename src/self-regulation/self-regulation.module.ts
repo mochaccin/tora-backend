@@ -1,4 +1,3 @@
-// src/self-regulation/self-regulation.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SelfRegulationService } from './self-regulation.service';
@@ -8,7 +7,7 @@ import { EmergencyContact, EmergencyContactSchema } from '../shared/schemas/emer
 import { Child, ChildSchema } from '../shared/schemas/user.schema';
 import { Parent, ParentSchema } from '../shared/schemas/user.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
-import { WhatsAppModule } from '../whatsapp/whatsapp.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -19,7 +18,7 @@ import { WhatsAppModule } from '../whatsapp/whatsapp.module';
       { name: Parent.name, schema: ParentSchema },
     ]),
     NotificationsModule,
-    WhatsAppModule,
+    EmailModule,
   ],
   controllers: [SelfRegulationController],
   providers: [SelfRegulationService],

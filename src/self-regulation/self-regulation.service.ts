@@ -3,7 +3,7 @@ import { Injectable, Logger, Inject } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose"
 import { Model, Types } from "mongoose"
 import { NotificationsService } from "../notifications/notifications.service"
-import { WhatsAppService } from "../whatsapp/whatsapp.service"
+import { EmailService } from "../email/email.service"
 import { 
   SelfRegulationButton, 
   SelfRegulationButtonDocument, 
@@ -34,7 +34,7 @@ export class SelfRegulationService {
     private parentModel: Model<ParentDocument>,
     
     private notificationsService: NotificationsService,
-    private whatsappService: WhatsAppService,
+    private emailService: EmailService,
   ) {}
 
   /**
@@ -127,7 +127,7 @@ export class SelfRegulationService {
 
       const notificationData: Record<string, string> = {
         type: "SELF_REGULATION_ALERT",
-        childId: childObjectId.toString(), // Use the converted ObjectId
+        childId: childObjectId.toString(),
         childName: childName,
         regulationId: regulationRecord._id.toString(),
         level: regulationRecord.level,
@@ -153,11 +153,10 @@ export class SelfRegulationService {
 
       this.logger.log(`✅ Parent notification result: ${JSON.stringify(parentResult)}`)
 
-      // ENVIAR ALERTAS POR WHATSAPP A CONTACTOS DE EMERGENCIA
       if (emergencyContacts.length > 0) {
-        this.logger.log(`📱 Sending WhatsApp alerts to ${emergencyContacts.length} contacts`)
+        this.logger.log(`📧 Sending email alerts to ${emergencyContacts.length} contacts`)
 
-        const whatsappResult = await this.whatsappService.sendEmergencyAlerts(
+        const emailResult = await this.emailService.sendEmergencyAlerts(
           childName,
           regulationRecord.level,
           emergencyContacts,
@@ -168,30 +167,14 @@ export class SelfRegulationService {
           },
         )
 
-        this.logger.log(`✅ WhatsApp alerts: ${whatsappResult.sent} sent, ${whatsappResult.failed} failed`)
+        this.logger.log(`✅ Email alerts: ${emailResult.sent} sent, ${emailResult.failed} failed`)
       } else {
-        this.logger.log("ℹ️ No emergency contacts configured for WhatsApp alerts")
+        this.logger.log("ℹ️ No emergency contacts configured for email alerts")
       }
 
       this.logger.log(`✅ All alerts processed for child ${childName}`)
     } catch (error) {
       this.logger.error(`❌ Error sending alerts: ${error.message}`, error.stack)
-    }
-  }
-
-  /**
-   * Enviar alerta a un contacto específico
-   */
-  private async sendContactAlert(contact: EmergencyContact, title: string, body: string, data: Record<string, string>) {
-    try {
-      // En una implementación real, aquí enviarías SMS/email/llamada
-      // Por ahora solo logramos la acción
-      this.logger.log(`📞 ALERT for ${contact.name} (${contact.phone}): ${title} - ${body}`)
-
-      // Podrías integrar con un servicio de SMS como Twilio aquí
-      // await this.smsService.sendSMS(contact.phone, `${title}: ${body}`);
-    } catch (error) {
-      this.logger.error(`❌ Error sending alert to contact ${contact.name}: ${error.message}`)
     }
   }
 
