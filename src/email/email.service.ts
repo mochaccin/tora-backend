@@ -98,24 +98,24 @@ export class EmailService {
     const emoji = levelEmojis[level] || '🚨';
     const color = levelColors[level] || '#FF0000';
 
-    let textContent = `${emoji} SELF-REGULATION ALERT ${emoji}\n\n`;
-    textContent += `Child: ${childName}\n`;
-    textContent += `Alert Level: ${level}\n`;
-    textContent += `Time: ${new Date().toLocaleString()}\n\n`;
+    let textContent = `${emoji} ALERTA DE AUTORREGULACIÓN ${emoji}\n\n`;
+    textContent += `Niño/a: ${childName}\n`;
+    textContent += `Nivel de Alerta: ${level}\n`;
+    textContent += `Hora: ${new Date().toLocaleString('es-ES')}\n\n`;
 
     if (additionalInfo?.emotion) {
-      textContent += `Emotion: ${additionalInfo.emotion}\n`;
+      textContent += `Emoción: ${additionalInfo.emotion}\n`;
     }
 
     if (additionalInfo?.trigger) {
-      textContent += `Trigger: ${additionalInfo.trigger}\n`;
+      textContent += `Desencadenante: ${additionalInfo.trigger}\n`;
     }
 
     if (additionalInfo?.assistanceRequested) {
-      textContent += `🚨 REQUESTING IMMEDIATE ASSISTANCE\n`;
+      textContent += `🚨 SOLICITANDO ASISTENCIA INMEDIATA\n`;
     }
 
-    textContent += `\nPlease contact the parents immediately.`;
+    textContent += `\nPor favor, contacte a los padres inmediatamente.`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -189,33 +189,33 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1 style="margin: 0; font-size: 28px;">${emoji} SELF-REGULATION ALERT ${emoji}</h1>
-            <p style="margin: 10px 0 0 0;">Emergency notification from TORA App</p>
+            <h1 style="margin: 0; font-size: 28px;">${emoji} ALERTA DE AUTORREGULACIÓN ${emoji}</h1>
+            <p style="margin: 10px 0 0 0;">Notificación de emergencia desde la aplicación TORA</p>
           </div>
           
           <div class="content">
             <div class="alert-level">
-              Alert Level: ${level}
+              Nivel de Alerta: ${level}
             </div>
             
             <div class="details">
               <div class="detail-item">
-                <span class="detail-label">Child:</span> ${childName}
+                <span class="detail-label">Niño/a:</span> ${childName}
               </div>
               <div class="detail-item">
-                <span class="detail-label">Time:</span> ${new Date().toLocaleString()}
+                <span class="detail-label">Hora:</span> ${new Date().toLocaleString('es-ES')}
               </div>
               ${
                 additionalInfo?.emotion
                   ? `<div class="detail-item">
-                <span class="detail-label">Emotion:</span> ${additionalInfo.emotion}
+                <span class="detail-label">Emoción:</span> ${additionalInfo.emotion}
               </div>`
                   : ''
               }
               ${
                 additionalInfo?.trigger
                   ? `<div class="detail-item">
-                <span class="detail-label">Trigger:</span> ${additionalInfo.trigger}
+                <span class="detail-label">Desencadenante:</span> ${additionalInfo.trigger}
               </div>`
                   : ''
               }
@@ -224,20 +224,20 @@ export class EmailService {
             ${
               additionalInfo?.assistanceRequested
                 ? `<div class="urgency-notice">
-              🚨 REQUESTING IMMEDIATE ASSISTANCE 🚨<br>
-              This child has indicated they need immediate help.
+              🚨 SOLICITANDO ASISTENCIA INMEDIATA 🚨<br>
+              Este niño/a ha indicado que necesita ayuda inmediata.
             </div>`
                 : ''
             }
             
             <p style="text-align: center; font-weight: bold; color: ${color}; font-size: 16px;">
-              Please contact the parents immediately.
+              Por favor, contacte a los padres inmediatamente.
             </p>
           </div>
           
           <div class="footer">
-            <p>This is an automated alert from the TORA Self-Regulation App.</p>
-            <p>If you received this email in error, please contact the app administrator.</p>
+            <p>Esta es una alerta automatizada de la aplicación TORA de Autorregulación.</p>
+            <p>Si recibió este correo por error, póngase en contacto con el administrador de la aplicación.</p>
           </div>
         </div>
       </body>
@@ -245,7 +245,7 @@ export class EmailService {
     `;
 
     return {
-      subject: `${emoji} Self-Regulation Alert: ${childName} - ${level}`,
+      subject: `${emoji} Alerta de Autorregulación: ${childName} - ${level}`,
       html: htmlContent,
       text: textContent,
     };
@@ -256,17 +256,17 @@ export class EmailService {
       await this.transporter.sendMail({
         from: process.env.GMAIL_USER,
         to: email,
-        subject: '🧪 TORA App - Test Email',
+        subject: '🧪 TORA - Correo de Prueba',
         html: `
           <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-            <h2>Test Email from TORA App</h2>
-            <p>This is a test email to confirm that email notifications are working correctly.</p>
-            <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+            <h2>Correo de Prueba desde la Aplicación TORA</h2>
+            <p>Este es un correo de prueba para confirmar que las notificaciones por correo electrónico están funcionando correctamente.</p>
+            <p><strong>Hora:</strong> ${new Date().toLocaleString('es-ES')}</p>
             <hr>
-            <p style="font-size: 12px; color: #666;">This is an automated message from the TORA Self-Regulation App.</p>
+            <p style="font-size: 12px; color: #666;">Este es un mensaje automatizado de la aplicación TORA de Autorregulación.</p>
           </div>
         `,
-        text: 'This is a test email from TORA App. If you received this, email notifications are working correctly.',
+        text: 'Este es un correo de prueba de la aplicación TORA. Si lo recibió, significa que las notificaciones por correo están funcionando correctamente.',
       });
 
       this.logger.log(`✅ Test email sent to ${email}`);
