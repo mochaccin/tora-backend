@@ -9,6 +9,8 @@ Auto regulation helper mobile application for neurodivergent kids ages 8 to 12. 
 - docker
 - backend
 - bash
+- React Native
+- mobile
 
 ## Problem
 
